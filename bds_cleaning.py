@@ -73,6 +73,32 @@ df["old_address"] = df["old_address"].str.replace("(Thị Xã ", "")
 df["old_address"] = df["old_address"].str.replace(", Hà Nội cũ)", "")
 df["old_address"] = df["old_address"].str.strip()
 
+# Remove outliers
+def iqr_trimming(data: pd.DataFrame, feature: str):
+    q1 = data[feature].quantile(0.25)
+    q3 = data[feature].quantile(0.75)
+    iqr = q3 - q1
+    lower_limit = q1 - 1.5 * iqr
+    upper_limit = q3 + 1.5 * iqr
+    data = data.loc[(lower_limit < df[feature]) & (df[feature] < upper_limit)]
+    return data
+
+def percentile_trimming(data: pd.DataFrame, feature: str):
+    lower_limit = df[feature].quantile(0.01)
+    upper_limit = df[feature].quantile(0.99)
+    data = data.loc[(lower_limit < df[feature]) & (df[feature] < upper_limit)]
+    return data
+
+before_len = len(df)
+print("Số lượng bản ghi ban đầu:", before_len)
+for col in ["price_per_m2"]:
+    df = percentile_trimming(df, col)
+
+print("Số lượng bản ghi sau khi loại bỏ Outlier:", len(df))
+print("Số lượng bản ghi loại bỏ:", before_len - len(df))
+print("Tỷ lệ bản ghi loại bỏ:", (before_len - len(df))/before_len * 100, "%")
+
+
 output_header = ["product_id", "price_range", "area", "price_per_m2", "number_of_bedrooms", "number_of_bathrooms", "number_of_stories", "front_length", "legal_status", "isFurnished", "old_address", "post_type", "isVerified"]
 print(tabulate(df[output_header], headers=output_header, tablefmt="psql"))
 df_out = df[output_header]
